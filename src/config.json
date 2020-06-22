@@ -1,0 +1,13 @@
+{
+    "base_topic" : "myhouse/meters/1",
+    "input": {
+        "vendor" : "0x1b4f",
+        "product" : "0x9206"
+    },
+    "mqtt-configuration": {
+        "server": "mqtt",
+        "port": 1883,
+        "keepalive": 60,
+        "qos": 0
+    }
+}

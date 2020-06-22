@@ -1,0 +1,23 @@
+#
+# build for QNX on x86 CPU
+#
+
+CC = qcc -V $(QNX_ARCH) -lang-c
+CXX = QCC -V $(QNX_ARCH) -lang-c++
+
+QNX_ARCH = gcc_ntox86
+DEFINES += -DSYSTEM_LITTLE_ENDIAN
+DEP_PREFIX = -Wc,
+LIBS += -lm -lsocket
+
+AR = qcc -A
+RANLIB = \#ranlib
+
+STRIP = ntox86-strip
+
+PRFFLAGS = -g -O0 -finstrument-functions -p
+LPRFFLAGS = -pg
+PROFILE_LIBS += -lprofilingS
+
+CVRFLAGS = -g -O0 -fprofile-arcs -ftest-coverage
+LCVRFLAGS = -fprofile-arcs -ftest-coverage -p

@@ -1,0 +1,23 @@
+#
+# build for Windows with mingw compiler
+#
+
+CC = gcc
+CXX = g++
+
+DEFINES += -DSYSTEM_LITTLE_ENDIAN
+LDFLAGS = -static-libgcc -static-libstdc++
+LIBS += -lws2_32 -lrpcrt4
+
+AR = ar -r
+RANLIB = ranlib
+
+STRIP = strip
+
+PRFFLAGS = -g -O0 -pg
+LPRFFLAGS = -pg
+
+CVRFLAGS = -g -O0 -fprofile-arcs -ftest-coverage
+LCVRFLAGS = -fprofile-arcs -ftest-coverage -p
+
+EXE_SUFFIX = .exe

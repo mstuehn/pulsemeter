@@ -1,0 +1,24 @@
+#
+# build for QNX on ARMv6 CPU / vfp FPU (little endian)
+#
+
+CC = qcc -V $(QNX_ARCH) -lang-c
+CXX = QCC -V $(QNX_ARCH) -lang-c++
+
+QNX_ARCH = gcc_ntoarmle
+DEFINES += -DSYSTEM_LITTLE_ENDIAN -DSYSTEM_ALIGNED_WORD_ACCESS_ONLY
+DEP_PREFIX = -Wc,
+CFLAGS += -march=armv6 -mfpu=vfp -mfloat-abi=softfp
+LIBS += -lm -lsocket
+
+AR = qcc -A
+RANLIB = \#ranlib
+
+STRIP = ntoarm-strip
+
+PRFFLAGS = -g -O0 -finstrument-functions -p
+LPRFFLAGS = -pg
+PROFILE_LIBS += -lprofilingS
+
+CVRFLAGS = -g -O0 -fprofile-arcs -ftest-coverage
+LCVRFLAGS = -fprofile-arcs -ftest-coverage -p

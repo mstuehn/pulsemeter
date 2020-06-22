@@ -1,0 +1,93 @@
+#
+# system dependant configuration
+#
+
+ifndef ARCHITECTURE
+-include build-architecture
+ifndef ARCHITECTURE
+export ARCHITECTURE=$(OS)-$(CPU)
+endif
+endif
+
+#
+# figure out build target
+#
+
+debug: TARGET=debug
+profile: TARGET=profile
+coverage: TARGET=coverage
+release: TARGET=release
+clean: TARGET=clean
+
+#
+# local folders
+#
+
+obj:
+	mkdir obj
+	mkdir obj/debug
+	mkdir obj/profile
+	mkdir obj/coverage
+	mkdir obj/release
+
+bin:
+	mkdir bin
+
+lib:
+	mkdir lib
+
+
+#
+# C/C++ sources
+#
+
+obj/debug/%.o: %.c
+	$(CC) $(DEFINES) $(CFLAGS) $(INCDIRS) $(DBGFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/debug/%.o: %.cpp
+	$(CXX) $(DEFINES) $(CPPFLAGS) $(INCDIRS) $(DBGFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/profile/%.o: %.c
+	$(CC) $(DEFINES) $(CFLAGS) $(INCDIRS) $(PRFFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/profile/%.o: %.cpp
+	$(CXX) $(DEFINES) $(CPPFLAGS) $(INCDIRS) $(PRFFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/coverage/%.o: %.c
+	$(CC) $(DEFINES) $(CFLAGS) $(INCDIRS) $(CVRFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/coverage/%.o: %.cpp
+	$(CXX) $(DEFINES) $(CPPFLAGS) $(INCDIRS) $(CVRFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/release/%.o: %.c
+	$(CC) $(DEFINES) $(CFLAGS) $(INCDIRS) $(OPTFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+obj/release/%.o: %.cpp
+	$(CXX) $(DEFINES) $(CPPFLAGS) $(INCDIRS) $(OPTFLAGS) $(addprefix $(DEP_PREFIX), -MMD -MP -MF obj/$(basename $(notdir $@)).d -MT obj/\*/$(notdir $@)) -c -o $@ $<
+
+
+#
+# libraries
+#
+
+lib%.a:
+	$(AR) $@ $^
+	$(RANLIB) $@
+
+
+#
+# executables
+#
+
+$(addsuffix D, $(EXECUTABLES)):
+	$(CXX) $(LDFLAGS) $(LDBGFLAGS) -g -o $@ $^ $(LIBDIRS) $(DEBUG_LIBS) $(LIBS)
+
+$(addsuffix P, $(EXECUTABLES)):
+	$(CXX) $(LDFLAGS) $(LPRFFLAGS) -o $@ $^ $(LIBDIRS) $(PROFILE_LIBS) $(LIBS)
+
+$(addsuffix C, $(EXECUTABLES)):
+	$(CXX) $(LDFLAGS) $(LCVRFLAGS) -o $@ $^ $(LIBDIRS) $(COVERAGE_LIBS) $(LIBS)
+
+$(EXECUTABLES):
+	$(CXX) $(LDFLAGS) $(LOPTFLAGS) -o $@ $^ $(LIBDIRS) $(RELEASE_LIBS) $(LIBS)
+	$(STRIP) $@$(EXE_SUFFIX)

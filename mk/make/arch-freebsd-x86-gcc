@@ -1,0 +1,23 @@
+#
+# build for FreeBSD
+#
+
+CC = gcc$(COMPILER_VERSION)
+CXX = g++$(COMPILER_VERSION)
+
+INCDIRS += -isystem /usr/include -I /usr/local/include
+
+DEFINES += -DSYSTEM_LITTLE_ENDIAN
+LDFLAGS =
+LIBS += -lpthread
+
+AR = gcc-ar$(COMPILER_VERSION) -r
+RANLIB = gcc-ranlib$(COMPILER_VERSION)
+
+STRIP = strip
+
+PRFFLAGS = -g -O0 -pg
+LPRFFLAGS = -pg
+
+CVRFLAGS = -g -O0 -fprofile-arcs -ftest-coverage
+LCVRFLAGS = -fprofile-arcs -ftest-coverage -p

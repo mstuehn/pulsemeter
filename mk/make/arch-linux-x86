@@ -1,0 +1,21 @@
+#
+# build for Linux
+#
+
+CC = gcc
+CXX = g++
+
+DEFINES += -DSYSTEM_LITTLE_ENDIAN
+LDFLAGS =
+LIBS += -ldl -lrt -lpthread
+
+AR = ar -r
+RANLIB = ranlib
+
+STRIP = strip
+
+PRFFLAGS = -g -O0 -pg
+LPRFFLAGS = -pg
+
+CVRFLAGS = -g -O0 -fprofile-arcs -ftest-coverage
+LCVRFLAGS = -fprofile-arcs -ftest-coverage -p
