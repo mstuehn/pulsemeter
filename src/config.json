@@ -1,5 +1,5 @@
 {
-    "base_topic" : "myhouse/meters/1",
+    "base_topic" : "house/meters",
     "input": {
         "vendor" : "0x1b4f",
         "product" : "0x9206"

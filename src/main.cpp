@@ -34,6 +34,9 @@
 //    return wss.str();
 //}
 
+#define GAS_KEY KEY_F21
+#define WATER_KEY KEY_F22
+
 static void __attribute__((noreturn))
 usage(void)
 {
@@ -41,7 +44,10 @@ usage(void)
     exit(1);
 }
 
-void update_value( std::string& message, float& value )
+static float water_m3 = 0.0;
+static float gas_m3 = 0.0;
+
+void update_value( std::string& message )
 {
     JSONCPP_STRING err;
     Json::Value msgval;
@@ -52,17 +58,22 @@ void update_value( std::string& message, float& value )
     auto parsingOk = parseFromStream( builder, in, &msgval, &err );
     if( parsingOk ){
         try {
-            value = msgval["set"].asFloat();
+            if( msgval.isMember("gas") )
+            {
+                gas_m3 = msgval["gas"].asFloat();
+                printf("updated GAS to %1.2f\n", gas_m3);
+            }
+            if( msgval.isMember("water") )
+            {
+                water_m3 = msgval["water"].asFloat();
+                printf("updated WATER to %1.2f\n", water_m3);
+            }
         }catch( Json::Exception e ) {
             printf("catched Exception: %s\n", e.what() );
         }
-        printf("updated to %1.2f\n", value );
     } else printf("parsing not ok\n");
 
 }
-
-static float water_m3 = 0.0;
-static float gas_m3 = 0.0;
 
 int main( int argc, char* argv[] )
 {
@@ -97,18 +108,10 @@ int main( int argc, char* argv[] )
     MQTT mqtt(root["mqtt-configuration"]);
     auto base_topic = root["base_topic"].asString();
 
-    mqtt.add_callback( base_topic+"/water/cmd/m3", [](uint8_t*msg, size_t len)
+    mqtt.add_callback( base_topic+"/stats", [](uint8_t*msg, size_t len)
             {
                 std::string strmsg( (char*)msg, len );
-
-                update_value( strmsg, water_m3 );
-            } );
-
-    mqtt.add_callback( base_topic+"/gas/cmd/m3", [](uint8_t*msg, size_t len)
-            {
-                std::string strmsg( (char*)msg, len );
-
-                update_value( strmsg, gas_m3 );
+                update_value( strmsg );
 
             } );
 
@@ -144,25 +147,25 @@ int main( int argc, char* argv[] )
                     wr.settings_["precision"] = 3;
 
                     switch( code ) {
-                        case KEY_F21:
+                        case GAS_KEY:
                         {
                             gas_m3 += 0.01;
 
                             Json::Value info;
                             info["m3"] = gas_m3;
                             std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/gas/values", msg.c_str(), msg.length(), 0 );
-                            std::cout << "Water: " << gas_m3 << std::endl;
+                            mqtt.publish(base_topic+"/gas/amount", msg.c_str(), msg.length(), 0 );
+                            std::cout << "GAS: " << gas_m3 << std::endl;
                         }break;
-                        case KEY_F22:
+                        case WATER_KEY:
                         {
                             water_m3 += 0.1;
 
                             Json::Value info;
                             info["m3"] = water_m3;
                             std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/water/values", msg.c_str(), msg.length(), 0 );
-                            std::cout << "Gas: " << water_m3 << std::endl;
+                            mqtt.publish(base_topic+"/water/amount", msg.c_str(), msg.length(), 0 );
+                            std::cout << "Water: " << water_m3 << std::endl;
                         } break;
                     }
             }
