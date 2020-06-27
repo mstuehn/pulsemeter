@@ -26,13 +26,13 @@
 #include <iomanip>
 #include <chrono>
 
-static std::string now() {
-    auto t = std::time(nullptr);
-    std::tm tm = *std::localtime(&t);
-    std::stringstream wss;
-    wss << std::put_time(&tm, "%H:%M:%S %d-%m-%Y");
-    return wss.str();
-}
+//static std::string now() {
+//    auto t = std::time(nullptr);
+//    std::tm tm = *std::localtime(&t);
+//    std::stringstream wss;
+//    wss << std::put_time(&tm, "%H:%M:%S %d-%m-%Y");
+//    return wss.str();
+//}
 
 static void __attribute__((noreturn))
 usage(void)
@@ -41,13 +41,34 @@ usage(void)
     exit(1);
 }
 
+void update_value( std::string& message, float& value )
+{
+    JSONCPP_STRING err;
+    Json::Value msgval;
+    Json::CharReaderBuilder builder;
+    std::istringstream in( message );
+    printf("Got message: %s\n", message.c_str() );
+
+    auto parsingOk = parseFromStream( builder, in, &msgval, &err );
+    if( parsingOk ){
+        try {
+            value = msgval["set"].asFloat();
+        }catch( Json::Exception e ) {
+            printf("catched Exception: %s\n", e.what() );
+        }
+        printf("updated to %1.2f\n", value );
+    } else printf("parsing not ok\n");
+
+}
+
 static float water_m3 = 0.0;
 static float gas_m3 = 0.0;
 
 int main( int argc, char* argv[] )
 {
+    JSONCPP_STRING errs;
     Json::Value root;
-    Json::Reader rd;
+
     std::string config_filename = "/usr/local/etc/doorbell/config.json";
 
     signed char ch;
@@ -66,12 +87,11 @@ int main( int argc, char* argv[] )
     argv += optind;
 
     std::ifstream config( config_filename, std::ifstream::binary );
-    bool parsingOk = rd.parse(config, root, false);
 
-    if( !parsingOk )
-    {
-        std::cerr << "Error during reading " << config_filename << std::endl;
-        exit( 2 );
+    Json::CharReaderBuilder builder;
+    if (!parseFromStream( builder, config, &root, &errs )) {
+        std::cout << errs << std::endl;
+        return EXIT_FAILURE;
     }
 
     MQTT mqtt(root["mqtt-configuration"]);
@@ -79,39 +99,16 @@ int main( int argc, char* argv[] )
 
     mqtt.add_callback( base_topic+"/water/cmd/m3", [](uint8_t*msg, size_t len)
             {
-                Json::Value msgval;
-                Json::Reader rd;
                 std::string strmsg( (char*)msg, len );
-                printf("Got message: %s\n", strmsg.c_str() );
-                std::istringstream in(strmsg);
-                bool parsingOk = rd.parse(in , msgval, false);
 
-                if( parsingOk ){
-                    try {
-                        water_m3 = msgval["set"].asFloat();
-                    }catch( Json::Exception e ) {
-                        printf("catched Exception: %s\n", e.what() );
-                    }
-                }
-
+                update_value( strmsg, water_m3 );
             } );
 
     mqtt.add_callback( base_topic+"/gas/cmd/m3", [](uint8_t*msg, size_t len)
             {
-                Json::Value msgval;
-                Json::Reader rd;
                 std::string strmsg( (char*)msg, len );
-                printf("Got message: %s\n", strmsg.c_str() );
-                std::istringstream in(strmsg);
-                bool parsingOk = rd.parse(in , msgval, false);
 
-                if( parsingOk ){
-                    try {
-                        gas_m3 = msgval["set"].asFloat();
-                    }catch( Json::Exception e ) {
-                        printf("catched Exception: %s\n", e.what() );
-                    }
-                }
+                update_value( strmsg, gas_m3 );
 
             } );
 
@@ -155,7 +152,7 @@ int main( int argc, char* argv[] )
                             info["m3"] = gas_m3;
                             std::string msg = Json::writeString(wr, info);
                             mqtt.publish(base_topic+"/gas/values", msg.c_str(), msg.length(), 0 );
-                            std::cout << "Water: " << water_m3 << std::endl;
+                            std::cout << "Water: " << gas_m3 << std::endl;
                         }break;
                         case KEY_F22:
                         {
