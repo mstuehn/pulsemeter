@@ -47,6 +47,11 @@ usage(void)
 static float water_m3 = 0.0;
 static float gas_m3 = 0.0;
 
+static float round2( float value )
+{
+    return (int)(value * 100 + 0.5) / 100.0;
+}
+
 void update_value( std::string& message )
 {
     JSONCPP_STRING err;
@@ -149,20 +154,20 @@ int main( int argc, char* argv[] )
                     switch( code ) {
                         case GAS_KEY:
                         {
-                            gas_m3 += 0.01;
+                            gas_m3 = round2( gas_m3 + 0.01 );
 
                             Json::Value info;
-                            info["m3"] = gas_m3;
+                            info["cubicmeter"] = gas_m3;
                             std::string msg = Json::writeString(wr, info);
                             mqtt.publish(base_topic+"/gas/amount", msg.c_str(), msg.length(), 0 );
                             std::cout << "GAS: " << gas_m3 << std::endl;
                         }break;
                         case WATER_KEY:
                         {
-                            water_m3 += 0.1;
+                            water_m3 = round2( water_m3 + 0.1 );
 
                             Json::Value info;
-                            info["m3"] = water_m3;
+                            info["cubicmeter"] = water_m3;
                             std::string msg = Json::writeString(wr, info);
                             mqtt.publish(base_topic+"/water/amount", msg.c_str(), msg.length(), 0 );
                             std::cout << "Water: " << water_m3 << std::endl;
