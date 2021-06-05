@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
@@ -40,7 +41,11 @@
 static void __attribute__((noreturn))
 usage(void)
 {
+#if defined(__FreeBSD__)
     printf("usage: %s [-d evdev-device] [-c config-file]\n", getprogname());
+#elif defined(__linux__)
+    printf("usage: %s [-d evdev-device] [-c config-file]\n", program_invocation_name );
+#endif
     exit(1);
 }
 
