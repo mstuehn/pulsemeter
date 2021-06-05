@@ -3,3 +3,4 @@ generated
 compile_commands.json
 *bak
 obj/*
+.cache
