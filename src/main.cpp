@@ -54,7 +54,7 @@ static float gas_m3 = 0.0;
 
 static float round2( float value )
 {
-    return (int)(value * 100 + 0.5) / 100.0;
+    return (int)(value * 100.0 + 0.5) / 100.0;
 }
 
 void update_value( std::string& message )
@@ -125,6 +125,7 @@ int main( int argc, char* argv[] )
 
             } );
 
+#if 0
     std::thread evdevpoll([ &mqtt , &base_topic, &root ](){
             uint32_t vendor_number;
             sscanf(root["input"]["vendor"].asString().c_str(), "%x", &vendor_number);
@@ -181,12 +182,12 @@ int main( int argc, char* argv[] )
             }
         }
     });
+#endif
 
     printf("Starting mqtt-loop\n");
     while(1) mqtt.loop();
 
     printf("Exit program\n");
 
-    evdevpoll.join();
     return 0;
 }

@@ -9,5 +9,19 @@
         "port": 1883,
         "keepalive": 60,
         "qos": 0
-    }
+    },
+    "sensors" : [
+        {
+            "name" : "water",
+            "unit" : "cubicmeter",
+            "impulse" : 0.1,
+            "event" : "191"
+        },
+        {
+            "name" : "gas",
+            "unit" : "cubicmeter",
+            "impulse" : 0.01,
+            "event" : "192"
+        }
+    ]
 }
