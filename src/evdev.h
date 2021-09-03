@@ -15,7 +15,7 @@ class EvDevice {
         EvDevice( uint16_t, uint16_t );
         virtual ~EvDevice();
 
-        bool add_callback(std::function<void(uint16_t, uint16_t)>);
+        void add_callback( uint16_t, std::function<void(uint16_t)>);
 
     private:
         // member functions

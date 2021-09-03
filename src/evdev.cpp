@@ -21,6 +21,12 @@ static void print_driver_version( int fd )
 
 }
 
+void EvDevice::add_callback( uint16_t code, std::function<void(uint16_t)> cb )
+{
+    std::lock_guard<std::mutex> lockGuard(m_Mtx);
+    m_Callbacks[code].push_back( cb );
+}
+
 bool EvDevice::device_match(){
     uint16_t id[4];
     if( ioctl(m_Fd, EVIOCGID, id) ) return false;
