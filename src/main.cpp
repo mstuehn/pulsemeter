@@ -27,14 +27,6 @@
 #include <iomanip>
 #include <chrono>
 
-//static std::string now() {
-//    auto t = std::time(nullptr);
-//    std::tm tm = *std::localtime(&t);
-//    std::stringstream wss;
-//    wss << std::put_time(&tm, "%H:%M:%S %d-%m-%Y");
-//    return wss.str();
-//}
-
 #define GAS_KEY KEY_F21
 #define WATER_KEY KEY_F22
 
