@@ -105,6 +105,7 @@ EvDevice::EvDevice( uint16_t vendor, uint16_t product ) :
 
             if( result.first )
             {
+                std::lock_guard<std::mutex> lockGuard(m_Mtx);
                 if( !m_Callbacks.count(code) && m_Callbacks[code].empty() ) continue;
 
                 for( auto& callback : m_Callbacks[code] ) {
