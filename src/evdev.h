@@ -1,5 +1,7 @@
 #pragma once
 
+#include <linux/input-event-codes.h>
+
 #include <mutex>
 #include <cstdint>
 #include <map>
