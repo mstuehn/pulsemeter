@@ -117,6 +117,34 @@ int main( int argc, char* argv[] )
 
             } );
 
+    uint16_t vendor_number = std::stol(root["input"]["vendor"].asString(), nullptr, 0);
+    uint16_t product_number = std::stol(root["input"]["product"].asString(), nullptr, 0);
+
+    EvDevice evdev( vendor_number, product_number );
+
+    for( auto &sensor : root["sensors"] ) {
+
+        auto evdev_code = sensor["event"].asUInt();
+        auto name = sensor["name"].asString();
+        auto unit = sensor["name"].asString();
+        auto impulse = sensor["name"].asUInt();
+
+
+        evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
+                {
+                    Json::Value info;
+                    info["cubicmeter"] = gas_m3;
+
+                    Json::StreamWriterBuilder wr;
+                    wr.settings_["precision"] = 3;
+
+                    gas_m3 = round2( gas_m3 + impulse );
+
+                    std::string msg = Json::writeString(wr, info);
+                    mqtt.publish(base_topic+"/"+name+"/amount", msg.c_str(), msg.length(), 0 );
+                } );
+    }
+
 #if 0
     std::thread evdevpoll([ &mqtt , &base_topic, &root ](){
             uint32_t vendor_number;
