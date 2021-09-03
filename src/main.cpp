@@ -41,7 +41,7 @@ usage(void)
     exit(1);
 }
 
-static float water_m3 = 0.0;
+static float water_m3 = 0.0; // TODO: Remove, introduce measurement-class
 static float gas_m3 = 0.0;
 
 static float round2( float value )
