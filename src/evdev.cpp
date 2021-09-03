@@ -40,7 +40,7 @@ bool EvDevice::device_match(){
 std::pair<bool, std::pair<uint16_t, uint16_t>> EvDevice::get_events(uint16_t type)
 {
     struct input_event ev;
-    auto size = ::read(m_Fd, &ev, sizeof(struct input_event));
+    auto size = ::read( m_Fd, &ev, sizeof(struct input_event) );
 
     if( size < (ssize_t)sizeof(struct input_event) ) {
         printf("expected %lu bytes, got %li\n", sizeof(struct input_event), size);
@@ -82,8 +82,8 @@ std::pair<bool, std::string> EvDevice::open()
 
 
 EvDevice::EvDevice( uint16_t vendor, uint16_t product ) :
-    m_Vendor( vendor ), m_Product( product ), m_KeepRunning(true),
-    m_Worker([this](){
+    m_Vendor( vendor ), m_Product( product ), m_KeepRunning( true ),
+    m_Worker( [this](){
         while( m_KeepRunning ) {
             auto result = open();
             if( result.first ) {
