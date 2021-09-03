@@ -125,7 +125,3 @@ EvDevice::~EvDevice()
     m_Worker.join();
 }
 
-void EvDevice::worker_thread(void)
-{
-}
-
