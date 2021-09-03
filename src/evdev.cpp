@@ -113,6 +113,7 @@ EvDevice::EvDevice( uint16_t vendor, uint16_t product ) :
                 }
             }
         }
+        std::cout << "Exit monitor thread" << std::endl;
     })
 {
 
