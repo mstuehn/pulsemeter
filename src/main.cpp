@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <exception>
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
@@ -27,9 +28,6 @@
 #include <iomanip>
 #include <chrono>
 
-#define GAS_KEY KEY_F21
-#define WATER_KEY KEY_F22
-
 static void __attribute__((noreturn))
 usage(void)
 {
@@ -41,8 +39,7 @@ usage(void)
     exit(1);
 }
 
-static float water_m3 = 0.0; // TODO: Remove, introduce measurement-class
-static float gas_m3 = 0.0;
+static std::map<std::string, float> counters;
 
 static float round2( float value )
 {
@@ -60,15 +57,12 @@ void update_value( std::string& message )
     auto parsingOk = parseFromStream( builder, in, &msgval, &err );
     if( parsingOk ){
         try {
-            if( msgval.isMember("gas") )
+            if( msgval.isMember("name") && msgval.isMember("value") )
             {
-                gas_m3 = msgval["gas"].asFloat();
-                printf("updated GAS to %1.2f\n", gas_m3);
-            }
-            if( msgval.isMember("water") )
-            {
-                water_m3 = msgval["water"].asFloat();
-                printf("updated WATER to %1.2f\n", water_m3);
+                auto name = msgval["name"].asString();
+                auto value = msgval["value"].asFloat();
+                counters[name] = value;
+                printf("updated %s to %1.2f\n", name.c_str(), value );
             }
         }catch( Json::Exception e ) {
             printf("catched Exception: %s\n", e.what() );
@@ -124,85 +118,42 @@ int main( int argc, char* argv[] )
 
     for( auto &sensor : root["sensors"] ) {
 
-        auto evdev_code = sensor["event"].asUInt();
-        auto name = sensor["name"].asString();
-        auto unit = sensor["name"].asString();
-        auto impulse = sensor["name"].asUInt();
 
+        try { 
+            auto evdev_code = sensor["event"].asUInt();
+            auto impulse = sensor["impulse"].asFloat();
+            auto name = sensor["name"].asString();
+            auto unit = sensor["unit"].asString();
 
-        evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
-                {
-                    Json::Value info;
-                    info["cubicmeter"] = gas_m3;
+            std::cout << "------------------------" << std::endl;
+            std::cout << "CODE:    " << evdev_code << std::endl;
+            std::cout << "NAME:    " << name << std::endl;
+            std::cout << "UNIT:    " << unit << std::endl;
+            std::cout << "IMPULSE: " << impulse << std::endl;
+            std::cout << "------------------------" << std::endl;
 
-                    Json::StreamWriterBuilder wr;
-                    wr.settings_["precision"] = 3;
+            evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
+                    {
+                        Json::Value info;
+                        float& counter = counters["name"];
 
-                    gas_m3 = round2( gas_m3 + impulse );
+                        info["cubicmeter"] = counter;
 
-                    std::string msg = Json::writeString(wr, info);
-                    mqtt.publish(base_topic+"/"+name+"/amount", msg.c_str(), msg.length(), 0 );
-                } );
-    }
+                        Json::StreamWriterBuilder wr;
+                        wr.settings_["precision"] = 3;
 
-#if 0
-    std::thread evdevpoll([ &mqtt , &base_topic, &root ](){
-            uint32_t vendor_number;
-            sscanf(root["input"]["vendor"].asString().c_str(), "%x", &vendor_number);
+                        counter = round2( counter + impulse );
 
-            uint32_t product_number;
-            sscanf(root["input"]["product"].asString().c_str(), "%x", &product_number);
+                        std::string msg = Json::writeString(wr, info);
+                        mqtt.publish( base_topic+"/"+name+"/amount", msg.c_str(), msg.length(), 0 );
+                    });
 
-            char* filename;
-            do {
-                filename = scan_devices(vendor_number, product_number);
-            } while( filename == NULL );
+        } catch(std::exception &e) {
+            std::cerr << "Exception happened: " << e.what() << std::endl;
 
-            std::cout << "Opening " << filename << std::endl;
-
-            int fd;
-            if( (fd = open(filename, O_RDONLY) ) < 0) {
-                perror("");
-                if (errno == EACCES && getuid() != 0) {
-                    fprintf(stderr, "You do not have access to %s. Try "
-                            "running as root instead.\n", filename);
-                    }
-                    return;
-            }
-
-            while( 1 ) {
-                uint16_t code, value;
-                if( get_events( fd, EV_KEY, &code, &value ) && value == 1 )
-                {
-                    Json::StreamWriterBuilder wr;
-                    wr.settings_["precision"] = 3;
-
-                    switch( code ) {
-                        case GAS_KEY:
-                        {
-                            gas_m3 = round2( gas_m3 + 0.01 );
-
-                            Json::Value info;
-                            info["cubicmeter"] = gas_m3;
-                            std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/gas/amount", msg.c_str(), msg.length(), 0 );
-                            std::cout << "GAS: " << gas_m3 << std::endl;
-                        }break;
-                        case WATER_KEY:
-                        {
-                            water_m3 = round2( water_m3 + 0.1 );
-
-                            Json::Value info;
-                            info["cubicmeter"] = water_m3;
-                            std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/water/amount", msg.c_str(), msg.length(), 0 );
-                            std::cout << "Water: " << water_m3 << std::endl;
-                        } break;
-                    }
-            }
+            exit( 1 );
         }
-    });
-#endif
+    }
 
     printf("Starting mqtt-loop\n");
     while(1) mqtt.loop();
