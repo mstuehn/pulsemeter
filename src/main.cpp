@@ -13,8 +13,6 @@
 #include <sys/types.h>
 #include <err.h>
 
-#include <dirent.h>
-
 #include "mqtt.h"
 
 #include <json/json.h>
@@ -116,9 +114,8 @@ int main( int argc, char* argv[] )
 
     EvDevice evdev( vendor_number, product_number );
 
-    for( auto &sensor : root["sensors"] ) {
-
-
+    for( auto &sensor : root["sensors"] )
+    {
         try { 
             auto evdev_code = sensor["event"].asUInt();
             auto impulse = sensor["impulse"].asFloat();
