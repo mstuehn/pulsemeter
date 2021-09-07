@@ -131,6 +131,8 @@ int main( int argc, char* argv[] )
 
             evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
                     {
+                        if( code == 0 ) return;
+
                         Json::Value info;
                         float& counter = counters["name"];
 
