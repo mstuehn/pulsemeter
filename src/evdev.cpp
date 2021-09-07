@@ -64,7 +64,7 @@ std::pair<bool, std::string> EvDevice::open()
         char name[256] = "???";
         const std::string& fname = dir.path();
 
-        int m_Fd = ::open(fname.c_str(), O_RDONLY);
+        m_Fd = ::open(fname.c_str(), O_RDONLY);
         if( m_Fd < 0 ) continue;
 
         int result = ioctl( m_Fd, EVIOCGNAME(sizeof(name)), name );
