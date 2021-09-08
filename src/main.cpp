@@ -144,7 +144,9 @@ int main( int argc, char* argv[] )
                         counter = round2( counter + impulse );
 
                         std::string msg = Json::writeString(wr, info);
-                        mqtt.publish( base_topic+"/"+name+"/amount", msg.c_str(), msg.length(), 0 );
+                        const std::string topic = base_topic+"/"+name+"/amount";
+			std::cout << topic << " : " << counter << " " << unit << std::endl;
+                        mqtt.publish( topic, msg.c_str(), msg.length(), 0 );
                     });
 
         } catch(std::exception &e) {
