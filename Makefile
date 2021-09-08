@@ -1,4 +1,4 @@
-APPLICATION = bin/watermeter
+APPLICATION = bin/pulsemeter
 
 -include externals/*.mk
 
