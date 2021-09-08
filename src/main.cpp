@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <exception>
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
@@ -11,8 +12,6 @@
 
 #include <sys/types.h>
 #include <err.h>
-
-#include <dirent.h>
 
 #include "mqtt.h"
 
@@ -27,17 +26,6 @@
 #include <iomanip>
 #include <chrono>
 
-//static std::string now() {
-//    auto t = std::time(nullptr);
-//    std::tm tm = *std::localtime(&t);
-//    std::stringstream wss;
-//    wss << std::put_time(&tm, "%H:%M:%S %d-%m-%Y");
-//    return wss.str();
-//}
-
-#define GAS_KEY KEY_F21
-#define WATER_KEY KEY_F22
-
 static void __attribute__((noreturn))
 usage(void)
 {
@@ -49,12 +37,11 @@ usage(void)
     exit(1);
 }
 
-static float water_m3 = 0.0;
-static float gas_m3 = 0.0;
+static std::map<std::string, float> counters;
 
 static float round2( float value )
 {
-    return (int)(value * 100 + 0.5) / 100.0;
+    return (int)(value * 100.0 + 0.5) / 100.0;
 }
 
 void update_value( std::string& message )
@@ -68,15 +55,12 @@ void update_value( std::string& message )
     auto parsingOk = parseFromStream( builder, in, &msgval, &err );
     if( parsingOk ){
         try {
-            if( msgval.isMember("gas") )
+            if( msgval.isMember("name") && msgval.isMember("value") )
             {
-                gas_m3 = msgval["gas"].asFloat();
-                printf("updated GAS to %1.2f\n", gas_m3);
-            }
-            if( msgval.isMember("water") )
-            {
-                water_m3 = msgval["water"].asFloat();
-                printf("updated WATER to %1.2f\n", water_m3);
+                auto name = msgval["name"].asString();
+                auto value = msgval["value"].asFloat();
+                counters[name] = value;
+                printf("updated %s to %1.2f\n", name.c_str(), value );
             }
         }catch( Json::Exception e ) {
             printf("catched Exception: %s\n", e.what() );
@@ -125,68 +109,55 @@ int main( int argc, char* argv[] )
 
             } );
 
-    std::thread evdevpoll([ &mqtt , &base_topic, &root ](){
-            uint32_t vendor_number;
-            sscanf(root["input"]["vendor"].asString().c_str(), "%x", &vendor_number);
+    uint16_t vendor_number = std::stol(root["input"]["vendor"].asString(), nullptr, 0);
+    uint16_t product_number = std::stol(root["input"]["product"].asString(), nullptr, 0);
 
-            uint32_t product_number;
-            sscanf(root["input"]["product"].asString().c_str(), "%x", &product_number);
+    EvDevice evdev( vendor_number, product_number );
 
-            char* filename;
-            do {
-                filename = scan_devices(vendor_number, product_number);
-            } while( filename == NULL );
+    for( auto &sensor : root["sensors"] )
+    {
+        try { 
+            auto evdev_code = sensor["event"].asUInt();
+            auto impulse = sensor["impulse"].asFloat();
+            auto name = sensor["name"].asString();
+            auto unit = sensor["unit"].asString();
 
-            std::cout << "Opening " << filename << std::endl;
+            std::cout << "------------------------" << std::endl;
+            std::cout << "CODE:    " << evdev_code << std::endl;
+            std::cout << "NAME:    " << name << std::endl;
+            std::cout << "UNIT:    " << unit << std::endl;
+            std::cout << "IMPULSE: " << impulse << std::endl;
+            std::cout << "------------------------" << std::endl;
 
-            int fd;
-            if( (fd = open(filename, O_RDONLY) ) < 0) {
-                perror("");
-                if (errno == EACCES && getuid() != 0) {
-                    fprintf(stderr, "You do not have access to %s. Try "
-                            "running as root instead.\n", filename);
-                    }
-                    return;
-            }
+            evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
+                    {
+                        if( code == 0 ) return;
 
-            while( 1 ) {
-                uint16_t code, value;
-                if( get_events( fd, EV_KEY, &code, &value ) && value == 1 )
-                {
-                    Json::StreamWriterBuilder wr;
-                    wr.settings_["precision"] = 3;
+                        Json::Value info;
+                        float& counter = counters["name"];
 
-                    switch( code ) {
-                        case GAS_KEY:
-                        {
-                            gas_m3 = round2( gas_m3 + 0.01 );
+                        info["cubicmeter"] = counter;
 
-                            Json::Value info;
-                            info["cubicmeter"] = gas_m3;
-                            std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/gas/amount", msg.c_str(), msg.length(), 0 );
-                            std::cout << "GAS: " << gas_m3 << std::endl;
-                        }break;
-                        case WATER_KEY:
-                        {
-                            water_m3 = round2( water_m3 + 0.1 );
+                        Json::StreamWriterBuilder wr;
+                        wr.settings_["precision"] = 3;
 
-                            Json::Value info;
-                            info["cubicmeter"] = water_m3;
-                            std::string msg = Json::writeString(wr, info);
-                            mqtt.publish(base_topic+"/water/amount", msg.c_str(), msg.length(), 0 );
-                            std::cout << "Water: " << water_m3 << std::endl;
-                        } break;
-                    }
-            }
+                        counter = round2( counter + impulse );
+
+                        std::string msg = Json::writeString(wr, info);
+                        mqtt.publish( base_topic+"/"+name+"/amount", msg.c_str(), msg.length(), 0 );
+                    });
+
+        } catch(std::exception &e) {
+            std::cerr << "Exception happened: " << e.what() << std::endl;
+
+            exit( 1 );
         }
-    });
+    }
 
     printf("Starting mqtt-loop\n");
     while(1) mqtt.loop();
 
     printf("Exit program\n");
 
-    evdevpoll.join();
     return 0;
 }
