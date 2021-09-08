@@ -139,7 +139,7 @@ int main( int argc, char* argv[] )
                         info[unit] = counter;
 
                         Json::StreamWriterBuilder wr;
-                        wr.settings_["precision"] = 3;
+                        wr.settings_["precision"] = 5;
 
                         counter = round2( counter + impulse );
 
