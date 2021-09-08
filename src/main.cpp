@@ -132,20 +132,19 @@ int main( int argc, char* argv[] )
             evdev.add_callback( evdev_code, [&mqtt, &base_topic, name, unit, impulse](uint16_t code)
                     {
                         if( code == 0 ) return;
+                        const std::string topic = base_topic+"/"+name+"/amount";
+
+                        float& counter = counters[name];
+                        counter = round2( counter + impulse );
+                        std::cout << topic << " : " << counter << " " << unit << std::endl;
 
                         Json::Value info;
-                        float& counter = counters[name];
-
                         info[unit] = counter;
 
                         Json::StreamWriterBuilder wr;
                         wr.settings_["precision"] = 5;
-
-                        counter = round2( counter + impulse );
-
                         std::string msg = Json::writeString(wr, info);
-                        const std::string topic = base_topic+"/"+name+"/amount";
-			std::cout << topic << " : " << counter << " " << unit << std::endl;
+
                         mqtt.publish( topic, msg.c_str(), msg.length(), 0 );
                     });
 
