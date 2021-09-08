@@ -134,9 +134,9 @@ int main( int argc, char* argv[] )
                         if( code == 0 ) return;
 
                         Json::Value info;
-                        float& counter = counters["name"];
+                        float& counter = counters[name];
 
-                        info["cubicmeter"] = counter;
+                        info[unit] = counter;
 
                         Json::StreamWriterBuilder wr;
                         wr.settings_["precision"] = 3;
